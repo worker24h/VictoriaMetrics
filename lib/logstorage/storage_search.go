@@ -82,25 +82,26 @@ type WriteBlockFunc func(workerID uint, timestamps []int64, columns []BlockColum
 
 // RunQuery runs the given q and calls writeBlock for results.
 func (s *Storage) RunQuery(ctx context.Context, tenantIDs []TenantID, q *Query, writeBlock WriteBlockFunc) error {
+	// callback, write blockResult to rows
 	writeBlockResult := func(workerID uint, br *blockResult) {
 		if br.rowsLen == 0 {
 			return
 		}
-
+		// get a blockRows object from poll
 		brs := getBlockRows()
 		csDst := brs.cs
 
-		cs := br.getColumns()
+		cs := br.getColumns() // column set, is not a large set
 		for _, c := range cs {
-			values := c.getValues(br)
+			values := c.getValues(br) // get values from blockResult
 			csDst = append(csDst, BlockColumn{
-				Name:   c.name,
+				Name:   c.name, // column name
 				Values: values,
 			})
 		}
 
 		timestamps := br.getTimestamps()
-		writeBlock(workerID, timestamps, csDst)
+		writeBlock(workerID, timestamps, csDst) // called callback, write to rows
 
 		brs.cs = csDst
 		putBlockRows(brs)
@@ -119,7 +120,7 @@ func (s *Storage) runQuery(ctx context.Context, tenantIDs []TenantID, q *Query, 
 		return err
 	}
 	q = qNew
-
+	// _stream_id: XXXXXX HELLOWORLD
 	streamIDs := q.getStreamIDs()
 	sort.Slice(streamIDs, func(i, j int) bool {
 		return streamIDs[i].less(&streamIDs[j])
@@ -143,12 +144,12 @@ func (s *Storage) runQuery(ctx context.Context, tenantIDs []TenantID, q *Query, 
 
 	ppMain := newDefaultPipeProcessor(writeBlockResultFunc)
 	pp := ppMain
-	stopCh := ctx.Done()
+	stopCh := ctx.Done() //获取chan, 用于关闭
 	cancels := make([]func(), len(q.pipes))
 	pps := make([]pipeProcessor, len(q.pipes))
-
+	//  初始化 pipe processor, 这里是倒排初始化
 	var errPipe error
-	for i := len(q.pipes) - 1; i >= 0; i-- {
+	for i := len(q.pipes) - 1; i >= 0; i-- { // 遍历pipe，创建pipeProcessor
 		p := q.pipes[i]
 		ctxChild, cancel := context.WithCancel(ctx)
 		pp = p.newPipeProcessor(workersCount, stopCh, cancel, pp)
@@ -759,13 +760,15 @@ func (s *Storage) search(workersCount int, so *genericSearchOptions, stopCh <-ch
 	// Spin up workers
 	var wgWorkers sync.WaitGroup
 	workCh := make(chan *blockSearchWorkBatch, workersCount)
-	wgWorkers.Add(workersCount)
+	wgWorkers.Add(workersCount) //最多核心数
 	for i := 0; i < workersCount; i++ {
 		go func(workerID uint) {
-			bs := getBlockSearch()
-			bm := getBitmap(0)
-			for bswb := range workCh {
+			bs := getBlockSearch() // obtain a blockSearch from pool
+			bm := getBitmap(0)     //create a bitmap
+			logger.Infof("workerId: %d, park workCh", workerID)
+			for bswb := range workCh { // blockSearchWorkBatch
 				bsws := bswb.bsws
+				logger.Infof("workerId: %d, received data from workCh, %d", workerID, len(bsws))
 				for i := range bsws {
 					bsw := &bsws[i]
 					if needStop(stopCh) {
@@ -774,7 +777,7 @@ func (s *Storage) search(workersCount int, so *genericSearchOptions, stopCh <-ch
 						continue
 					}
 
-					bs.search(bsw, bm)
+					bs.search(bsw, bm) //bitmap
 					if bs.br.rowsLen > 0 {
 						processBlockResult(workerID, &bs.br)
 					}
@@ -790,6 +793,7 @@ func (s *Storage) search(workersCount int, so *genericSearchOptions, stopCh <-ch
 	}
 
 	// Select partitions according to the selected time range
+	// 根据时间选择partitions
 	s.partitionsLock.Lock()
 	ptws := s.partitions
 	minDay := so.minTimestamp / nsecsPerDay
@@ -811,10 +815,13 @@ func (s *Storage) search(workersCount int, so *genericSearchOptions, stopCh <-ch
 	}
 	s.partitionsLock.Unlock()
 
-	// Obtain common filterStream from f
+	// Obtain获取 common filterStream from f
+	// 查询条件中有 这个的 _stream:{...}
 	sf, f := getCommonStreamFilter(so.filter)
 
 	// Schedule concurrent search across matching partitions.
+	// 这里partitions可能会很多，为了限制内存使用率 所以通过partitionSearchConcurrencyLimitCh
+	// 进行限制，并发量最多是cpu核心数
 	psfs := make([]partitionSearchFinalizer, len(ptws))
 	var wgSearchers sync.WaitGroup
 	for i, ptw := range ptws {
@@ -822,7 +829,7 @@ func (s *Storage) search(workersCount int, so *genericSearchOptions, stopCh <-ch
 		wgSearchers.Add(1)
 		go func(idx int, pt *partition) {
 			psfs[idx] = pt.search(sf, f, so, workCh, stopCh)
-			wgSearchers.Done()
+			wgSearchers.Done() // waitGroup -1
 			<-partitionSearchConcurrencyLimitCh
 		}(i, ptw.pt)
 	}
@@ -957,11 +964,11 @@ func (ddb *datadb) search(so *searchOptions, workCh chan<- *blockSearchWorkBatch
 	}
 	ddb.partsLock.Unlock()
 
-	// Apply search to matching parts
+	// Apply search to matching parts, 查找内容
 	for _, pw := range pws {
 		pw.p.search(so, workCh, stopCh)
 	}
-
+	//返回回调 减小引用
 	return func() {
 		for _, pw := range pws {
 			pw.decRef()
@@ -970,13 +977,13 @@ func (ddb *datadb) search(so *searchOptions, workCh chan<- *blockSearchWorkBatch
 }
 
 func (p *part) search(so *searchOptions, workCh chan<- *blockSearchWorkBatch, stopCh <-chan struct{}) {
-	bhss := getBlockHeaders()
-	if len(so.tenantIDs) > 0 {
+	bhss := getBlockHeaders()  // 从pool获取blockHeaders
+	if len(so.tenantIDs) > 0 { //按照tenantIDs
 		p.searchByTenantIDs(so, bhss, workCh, stopCh)
-	} else {
+	} else { //按照streamID
 		p.searchByStreamIDs(so, bhss, workCh, stopCh)
 	}
-	putBlockHeaders(bhss)
+	putBlockHeaders(bhss) // 归还blockHeaders到pool
 }
 
 func getBlockHeaders() *blockHeaders {
@@ -1031,7 +1038,7 @@ func (p *part) searchByTenantIDs(so *searchOptions, bhss *blockHeaders, workCh c
 			return
 		}
 
-		// locate tenantID equal or bigger than the tenantID in ibhs[0]
+		// locate 定位 tenantID equal or bigger than the tenantID in ibhs[0]
 		tenantID := &tenantIDs[0]
 		if tenantID.less(&ibhs[0].streamID.tenantID) {
 			tenantID = &ibhs[0].streamID.tenantID
@@ -1062,7 +1069,7 @@ func (p *part) searchByTenantIDs(so *searchOptions, bhss *blockHeaders, workCh c
 			// Skip the ibh, since it doesn't contain entries on the requested time range
 			continue
 		}
-
+		//读取blockHeaders
 		bhss.bhs = ibh.mustReadBlockHeaders(bhss.bhs[:0], p)
 
 		bhs := bhss.bhs
@@ -1077,9 +1084,9 @@ func (p *part) searchByTenantIDs(so *searchOptions, bhss *blockHeaders, workCh c
 				bhs = bhs[1:]
 				th := &bh.timestampsHeader
 				if so.minTimestamp > th.maxTimestamp || so.maxTimestamp < th.minTimestamp {
-					continue
+					continue //blockHeader仍然存在不在时间范围的block
 				}
-				if !scheduleBlockSearch(bh) {
+				if !scheduleBlockSearch(bh) { //过去出符合条件的 blockHeader
 					return
 				}
 			}
@@ -1126,7 +1133,7 @@ func (p *part) searchByStreamIDs(so *searchOptions, bhss *blockHeaders, workCh c
 		}
 	}
 
-	// it is assumed that ibhs are sorted
+	// it is assumed that ibhs are sorted. indexBlockHeaders
 	ibhs := p.indexBlockHeaders
 
 	for len(ibhs) > 0 && len(streamIDs) > 0 {
@@ -1165,7 +1172,7 @@ func (p *part) searchByStreamIDs(so *searchOptions, bhss *blockHeaders, workCh c
 			// Skip the ibh, since it doesn't contain entries on the requested time range
 			continue
 		}
-
+		//blockHeadersSet
 		bhss.bhs = ibh.mustReadBlockHeaders(bhss.bhs[:0], p)
 
 		bhs := bhss.bhs
@@ -1182,6 +1189,7 @@ func (p *part) searchByStreamIDs(so *searchOptions, bhss *blockHeaders, workCh c
 				if so.minTimestamp > th.maxTimestamp || so.maxTimestamp < th.minTimestamp {
 					continue
 				}
+				logger.Infof("bhs len: %d", len(bhs))
 				if !scheduleBlockSearch(bh) {
 					return
 				}
@@ -1213,6 +1221,9 @@ func (p *part) searchByStreamIDs(so *searchOptions, bhss *blockHeaders, workCh c
 
 func appendPartsInTimeRange(dst, src []*partWrapper, minTimestamp, maxTimestamp int64) []*partWrapper {
 	for _, pw := range src {
+		//判断，part是否符合条件
+		// part中的最大timestamp比查询条件最小值要小，则忽略part
+		// part中的最小timestamp比查询条件最大值要大，则忽略part
 		if maxTimestamp < pw.p.ph.MinTimestamp || minTimestamp > pw.p.ph.MaxTimestamp {
 			continue
 		}

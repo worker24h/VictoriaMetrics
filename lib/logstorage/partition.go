@@ -69,9 +69,9 @@ func mustOpenPartition(s *Storage, path string) *partition {
 	// Start initializing the partition
 	pt := &partition{
 		s:    s,
-		path: path,
-		name: name,
-		idb:  idb,
+		path: path, // partition storage path
+		name: name, // partition name
+		idb:  idb,  //index db
 	}
 
 	// Open datadb

@@ -102,7 +102,7 @@ func unmarshalMetaindexRows(dst []metaindexRow, r io.Reader) ([]metaindexRow, er
 			dst = append(dst, metaindexRow{})
 		}
 		mr := &dst[len(dst)-1]
-		tail, err := mr.Unmarshal(data)
+		tail, err := mr.Unmarshal(data) //二进制，按照字节解析
 		if err != nil {
 			return dst, fmt.Errorf("cannot unmarshal metaindexRow #%d from metaindex data: %w", len(dst)-dstLen, err)
 		}

@@ -39,10 +39,10 @@ type part struct {
 	columnsHeaderFile      fs.MustReadAtCloser
 	timestampsFile         fs.MustReadAtCloser
 
-	messageBloomValues bloomValuesReaderAt
-	oldBloomValues     bloomValuesReaderAt
+	messageBloomValues bloomValuesReaderAt //专门存储_msg的bloom values，message_bloom.bin 和 message_values.bin
+	oldBloomValues     bloomValuesReaderAt // formatVersion<1
 
-	bloomValuesShards []bloomValuesReaderAt
+	bloomValuesShards []bloomValuesReaderAt //formatVersion>=1
 }
 
 type bloomValuesReaderAt struct {
@@ -95,7 +95,7 @@ func mustOpenFilePart(pt *partition, path string) *part {
 	var p part
 	p.pt = pt
 	p.path = path
-	p.ph.mustReadMetadata(path)
+	p.ph.mustReadMetadata(path) // read metadata.json then init partHeader
 
 	columnNamesPath := filepath.Join(path, columnNamesFilename)
 	metaindexPath := filepath.Join(path, metaindexFilename)
@@ -117,7 +117,7 @@ func mustOpenFilePart(pt *partition, path string) *part {
 	metaindexReader := filestream.MustOpen(metaindexPath, true)
 	var mrs readerWithStats
 	mrs.init(metaindexReader)
-	p.indexBlockHeaders = mustReadIndexBlockHeaders(p.indexBlockHeaders[:0], &mrs)
+	p.indexBlockHeaders = mustReadIndexBlockHeaders(p.indexBlockHeaders[:0], &mrs) //parse metaindex.bin
 	mrs.MustClose()
 
 	// Open data files
@@ -142,7 +142,7 @@ func mustOpenFilePart(pt *partition, path string) *part {
 		valuesPath := filepath.Join(path, oldValuesFilename)
 		p.oldBloomValues.values = fs.MustOpenReaderAt(valuesPath)
 	} else {
-		p.bloomValuesShards = make([]bloomValuesReaderAt, p.ph.BloomValuesShardsCount)
+		p.bloomValuesShards = make([]bloomValuesReaderAt, p.ph.BloomValuesShardsCount) //布隆过滤器分片信息
 		for i := range p.bloomValuesShards {
 			shard := &p.bloomValuesShards[i]
 

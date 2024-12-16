@@ -659,7 +659,7 @@ func (wctx *pipeStreamContextWriteContext) flush() {
 	// Flush rcs to ppNext
 	br.setResultColumns(rcs, wctx.rowsCount)
 	wctx.rowsCount = 0
-	wctx.pcp.ppNext.writeBlock(0, br)
+	wctx.pcp.ppNext.writeBlock(0, br) //调用流水线，下一个pipe处理
 	br.reset()
 	for i := range rcs {
 		rcs[i].resetValues()

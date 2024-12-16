@@ -199,8 +199,8 @@ func matchStringByPhrase(bs *blockSearch, ch *columnHeader, bm *bitmap, phrase s
 		bm.resetBits()
 		return
 	}
-	visitValues(bs, ch, bm, func(v string) bool {
-		return matchPhrase(v, phrase)
+	visitValues(bs, ch, bm, func(v string) bool { // 搜索数据文件，即日志内容
+		return matchPhrase(v, phrase) //重点函数
 	})
 }
 
@@ -289,18 +289,19 @@ func visitValues(bs *blockSearch, ch *columnHeader, bm *bitmap, f func(value str
 		// Fast path - nothing to visit
 		return
 	}
-	values := bs.getValuesForColumn(ch)
+	values := bs.getValuesForColumn(ch) // message_values.bin
 	bm.forEachSetBit(func(idx int) bool {
 		return f(values[idx])
 	})
 }
 
+// tokens , stored token hash value
 func matchBloomFilterAllTokens(bs *blockSearch, ch *columnHeader, tokens []uint64) bool {
 	if len(tokens) == 0 {
 		return true
 	}
 	bf := bs.getBloomFilterForColumn(ch)
-	return bf.containsAll(tokens)
+	return bf.containsAll(tokens) //按位计算,判断是否存在
 }
 
 func quoteFieldNameIfNeeded(s string) string {

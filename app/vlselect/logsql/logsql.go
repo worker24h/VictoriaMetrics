@@ -844,7 +844,7 @@ type row struct {
 }
 
 func getLastNQueryResults(ctx context.Context, tenantIDs []logstorage.TenantID, q *logstorage.Query, limit int) ([]row, error) {
-	limitUpper := 2 * limit
+	limitUpper := 2 * limit //double size
 	q.AddPipeLimit(uint64(limitUpper))
 
 	rows, err := getQueryResultsWithLimit(ctx, tenantIDs, q, limitUpper)
@@ -928,9 +928,10 @@ func getQueryResultsWithLimit(ctx context.Context, tenantIDs []logstorage.Tenant
 
 	var rows []row
 	var rowsLock sync.Mutex
-	writeBlock := func(_ uint, timestamps []int64, columns []logstorage.BlockColumn) {
+	// callback, write data block to rows which it's the response
+	writeBlock := func( /* workerID unused */ _ uint, timestamps []int64, columns []logstorage.BlockColumn) {
 		clonedColumnNames := make([]string, len(columns))
-		for i, c := range columns {
+		for i, c := range columns { //acquire columns name from blockColumn
 			clonedColumnNames[i] = strings.Clone(c.Name)
 		}
 
@@ -941,7 +942,7 @@ func getQueryResultsWithLimit(ctx context.Context, tenantIDs []logstorage.Tenant
 				f.Name = clonedColumnNames[j]
 				f.Value = strings.Clone(columns[j].Values[i])
 			}
-
+			// append a new row to rows
 			rowsLock.Lock()
 			rows = append(rows, row{
 				timestamp: timestamp,
@@ -954,6 +955,7 @@ func getQueryResultsWithLimit(ctx context.Context, tenantIDs []logstorage.Tenant
 			cancel()
 		}
 	}
+	// execute query so
 	if err := vlstorage.RunQuery(ctxWithCancel, tenantIDs, q, writeBlock); err != nil {
 		return nil, err
 	}

@@ -50,11 +50,13 @@ type StorageConfig struct {
 	MaxDiskSpaceUsageBytes int64
 
 	// FlushInterval is the interval for flushing the in-memory data to disk at the Storage.
+	// default 5s
 	FlushInterval time.Duration
 
 	// FutureRetention is the allowed retention from the current time to future for the ingested data.
 	//
 	// Log entries with timestamps bigger than now+FutureRetention are ignored.
+	// default 2d
 	FutureRetention time.Duration
 
 	// MinFreeDiskSpaceBytes is the minimum free disk space at storage path after which the storage stops accepting new data
@@ -272,11 +274,12 @@ func MustOpenStorage(path string, cfg *StorageConfig) *Storage {
 		if err != nil {
 			logger.Panicf("FATAL: cannot parse partition filename %q at %q; it must be in the form YYYYMMDD: %s", fname, partitionsPath, err)
 		}
+		//t 距离 1970年1月1日多少天
 		day := t.UTC().UnixNano() / nsecsPerDay
 
 		partitionPath := filepath.Join(partitionsPath, fname)
 		pt := mustOpenPartition(s, partitionPath)
-		ptws[i] = newPartitionWrapper(pt, day)
+		ptws[i] = newPartitionWrapper(pt, day) //wrapper partitions
 	}
 	sort.Slice(ptws, func(i, j int) bool {
 		return ptws[i].day < ptws[j].day
@@ -302,7 +305,7 @@ func MustOpenStorage(path string, cfg *StorageConfig) *Storage {
 	ptws = ptws[:j]
 
 	s.partitions = ptws
-	s.runRetentionWatcher()
+	s.runRetentionWatcher() // ticker 1h, watcher partitions if to be dropped
 	s.runMaxDiskSpaceUsageWatcher()
 	return s
 }

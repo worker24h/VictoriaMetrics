@@ -21,7 +21,7 @@ func mustReadColumnNames(r filestream.ReadCloser) ([]string, map[string]uint64) 
 		logger.Panicf("FATAL: %s: cannot read colum names: %s", r.Path(), err)
 	}
 
-	columnNames, err := unmarshalColumnNames(src)
+	columnNames, err := unmarshalColumnNames(src) //除了message字段外，其他的都是columns
 	if err != nil {
 		logger.Panicf("FATAL: %s: %s", r.Path(), err)
 	}

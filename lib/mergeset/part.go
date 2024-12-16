@@ -53,15 +53,16 @@ var (
 	maxInmemoryBlockCacheSizeOnce sync.Once
 )
 
+/* indexdb中part定义 */
 type part struct {
-	ph partHeader
+	ph partHeader // 读取metadata.json
 
 	path string
 
-	size uint64
+	size uint64 //total size, metaindexSize + indexSize + itemsSize + lensSize
 
 	mrs []metaindexRow
-
+	// 三个随机读取文件，初始化part的时候，这三个文件并没有提前解析，因此是按需解析
 	indexFile fs.MustReadAtCloser
 	itemsFile fs.MustReadAtCloser
 	lensFile  fs.MustReadAtCloser
@@ -69,7 +70,7 @@ type part struct {
 
 func mustOpenFilePart(path string) *part {
 	var ph partHeader
-	ph.MustReadMetadata(path)
+	ph.MustReadMetadata(path) //read metadata.json, 初始化partHeader
 
 	metaindexPath := filepath.Join(path, metaindexFilename)
 	metaindexFile := filestream.MustOpen(metaindexPath, true)
@@ -101,7 +102,7 @@ func newPart(ph *partHeader, path string, size uint64, metaindexReader filestrea
 	var p part
 	p.path = path
 	p.size = size
-	p.mrs = mrs
+	p.mrs = mrs //metaindexRow set
 
 	p.indexFile = indexFile
 	p.itemsFile = itemsFile

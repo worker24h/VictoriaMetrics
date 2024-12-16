@@ -211,16 +211,16 @@ func (bs *blockSearch) search(bsw *blockSearchWork, bm *bitmap) {
 	bs.bsw = bsw
 
 	// search rows matching the given filter
-	bm.init(int(bsw.bh.rowsCount))
+	bm.init(int(bsw.bh.rowsCount)) //根据行数，计算出需要的bitmap
 	bm.setBits()
-	bs.bsw.so.filter.applyToBlockSearch(bs, bm)
+	bs.bsw.so.filter.applyToBlockSearch(bs, bm) // search data by bloomFilter
 
 	if bm.isZero() {
 		// The filter doesn't match any logs in the current block.
 		return
 	}
 
-	bs.br.mustInit(bs, bm)
+	bs.br.mustInit(bs, bm) //计算行数
 
 	// fetch the requested columns to bs.br.
 	if bs.bsw.so.needAllColumns {
@@ -316,7 +316,7 @@ func (bs *blockSearch) getColumnHeader(name string) *columnHeader {
 			continue
 		}
 
-		b := bs.getColumnsHeaderBlock()
+		b := bs.getColumnsHeaderBlock() //read columns_header.bin
 		if cr.offset > uint64(len(b)) {
 			logger.Panicf("FATAL: %s: header offset for column %q cannot exceed %d bytes; got %d bytes", bs.bsw.p.path, name, len(b), cr.offset)
 		}
@@ -410,7 +410,7 @@ func readColumnsHeaderBlock(dst []byte, p *part, bh *blockHeader) []byte {
 	}
 	dstLen := len(dst)
 	dst = bytesutil.ResizeNoCopyMayOverallocate(dst, int(n)+dstLen)
-	p.columnsHeaderFile.MustReadAt(dst[dstLen:], int64(bh.columnsHeaderOffset))
+	p.columnsHeaderFile.MustReadAt(dst[dstLen:], int64(bh.columnsHeaderOffset)) //read columns_header.bin
 	return dst
 }
 
@@ -434,7 +434,7 @@ func (bs *blockSearch) getBloomFilterForColumn(ch *columnHeader) *bloomFilter {
 	bb.B = bytesutil.ResizeNoCopyMayOverallocate(bb.B, int(bloomFilterSize))
 
 	bloomValuesFile.bloom.MustReadAt(bb.B, int64(ch.bloomFilterOffset))
-	bf = getBloomFilter()
+	bf = getBloomFilter() // 从pool获取bloomFilter
 	if err := bf.unmarshal(bb.B); err != nil {
 		logger.Panicf("FATAL: %s: cannot unmarshal bloom filter: %s", bs.partPath(), err)
 	}
@@ -465,7 +465,7 @@ func (bs *blockSearch) getValuesForColumn(ch *columnHeader) []string {
 		logger.Panicf("FATAL: %s: values block size cannot exceed %d bytes; got %d bytes", bs.partPath(), maxValuesBlockSize, valuesSize)
 	}
 	bb.B = bytesutil.ResizeNoCopyMayOverallocate(bb.B, int(valuesSize))
-	bloomValuesFile.values.MustReadAt(bb.B, int64(ch.valuesOffset))
+	bloomValuesFile.values.MustReadAt(bb.B, int64(ch.valuesOffset)) //message_values.bin
 
 	values = getStringBucket()
 	var err error
@@ -522,7 +522,7 @@ func (ih *indexBlockHeader) mustReadBlockHeaders(dst []blockHeader, p *part) []b
 		logger.Panicf("FATAL: %s: index block size cannot exceed %d bytes; got %d bytes", p.indexFile.Path(), maxIndexBlockSize, indexBlockSize)
 	}
 	bbCompressed.B = bytesutil.ResizeNoCopyMayOverallocate(bbCompressed.B, int(indexBlockSize))
-	p.indexFile.MustReadAt(bbCompressed.B, int64(ih.indexBlockOffset))
+	p.indexFile.MustReadAt(bbCompressed.B, int64(ih.indexBlockOffset)) //读取index.bin文件，blockHeader
 
 	bb := longTermBufPool.Get()
 	var err error

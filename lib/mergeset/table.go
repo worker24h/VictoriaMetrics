@@ -42,6 +42,7 @@ const defaultPartsToMerge = 15
 //
 // This number should be limited by the amount of time required to merge parts of this summary size.
 // The required time shouldn't exceed a day.
+// 400GB
 const maxPartSize = 400e9
 
 // The interval for flushing buffered data to parts, so it becomes visible to search.
@@ -161,6 +162,7 @@ type rawItemsShards struct {
 // The number of shards for rawItems per table.
 //
 // Higher number of shards reduces CPU contention and increases the max bandwidth on multi-core systems.
+// 匿名函数，初始化时执行并对rawItemsShardsPerTable赋值
 var rawItemsShardsPerTable = func() int {
 	cpus := cgroup.AvailableCPUs()
 	multiplier := cpus
@@ -369,13 +371,13 @@ func MustOpenTable(path string, flushCallback func(), prepareBlock PrepareBlockC
 		flushCallback:        flushCallback,
 		prepareBlock:         prepareBlock,
 		isReadOnly:           isReadOnly,
-		fileParts:            pws,
+		fileParts:            pws, // partWrapper
 		inmemoryPartsLimitCh: make(chan struct{}, maxInmemoryParts),
 		stopCh:               make(chan struct{}),
 	}
 	tb.mergeIdx.Store(uint64(time.Now().UnixNano()))
 	tb.rawItems.init()
-	tb.startBackgroundWorkers()
+	tb.startBackgroundWorkers() //涉及到合并操作，后续在单独分析
 
 	return tb
 }
@@ -1508,7 +1510,7 @@ func mustOpenParts(path string) []*partWrapper {
 			continue
 		}
 		fn := de.Name()
-		if _, ok := m[fn]; !ok {
+		if _, ok := m[fn]; !ok { // 实际目录与parts.json不一致则删除目录
 			deletePath := filepath.Join(path, fn)
 			logger.Infof("deleting %q because it isn't listed in %q; this is the expected case after unclean shutdown", deletePath, partsFile)
 			fs.MustRemoveAll(deletePath)

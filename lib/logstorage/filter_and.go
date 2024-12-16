@@ -55,14 +55,14 @@ func (fa *filterAnd) applyToBlockResult(br *blockResult, bm *bitmap) {
 
 func (fa *filterAnd) applyToBlockSearch(bs *blockSearch, bm *bitmap) {
 	if !fa.matchBloomFilters(bs) {
-		// Fast path - fa doesn't match bloom filters.
+		// Fast path - fa doesn't match bloom filters. 返回false表示一定不存在
 		bm.resetBits()
 		return
 	}
 
 	// Slow path - verify every filter separately.
 	for _, f := range fa.filters {
-		f.applyToBlockSearch(bs, bm)
+		f.applyToBlockSearch(bs, bm) //重点函数
 		if bm.isZero() {
 			// Shortcut - there is no need in applying the remaining filters,
 			// since the result will be zero anyway.
@@ -79,7 +79,7 @@ func (fa *filterAnd) matchBloomFilters(bs *blockSearch) bool {
 
 	for _, ft := range byFieldTokens {
 		fieldName := ft.field
-		tokens := ft.tokens
+		tokens := ft.tokens // query中的keyword，hello、world
 
 		v := bs.getConstColumnValue(fieldName)
 		if v != "" {
@@ -89,7 +89,7 @@ func (fa *filterAnd) matchBloomFilters(bs *blockSearch) bool {
 			return false
 		}
 
-		ch := bs.getColumnHeader(fieldName)
+		ch := bs.getColumnHeader(fieldName) // columnHeader
 		if ch == nil {
 			return false
 		}
@@ -108,13 +108,13 @@ func (fa *filterAnd) matchBloomFilters(bs *blockSearch) bool {
 	return true
 }
 
-func (fa *filterAnd) getByFieldTokens() []fieldTokens {
+func (fa *filterAnd) getByFieldTokens() []fieldTokens { //计算tokens hash values
 	fa.byFieldTokensOnce.Do(fa.initByFieldTokens)
 	return fa.byFieldTokens
 }
 
 func (fa *filterAnd) initByFieldTokens() {
-	fa.byFieldTokens = getCommonTokensForAndFilters(fa.filters)
+	fa.byFieldTokens = getCommonTokensForAndFilters(fa.filters) //计算tokens hash values
 }
 
 func getCommonTokensForAndFilters(filters []filter) []fieldTokens {
@@ -142,7 +142,7 @@ func getCommonTokensForAndFilters(filters []filter) []fieldTokens {
 			tokens := t.getTokens()
 			mergeFieldTokens(t.fieldName, tokens)
 		case *filterPhrase:
-			tokens := t.getTokens()
+			tokens := t.getTokens() //计算tokens hash
 			mergeFieldTokens(t.fieldName, tokens)
 		case *filterPrefix:
 			tokens := t.getTokens()
@@ -177,7 +177,7 @@ func getCommonTokensForAndFilters(filters []filter) []fieldTokens {
 		byFieldTokens = append(byFieldTokens, fieldTokens{
 			field:        fieldName,
 			tokens:       tokens,
-			tokensHashes: appendTokensHashes(nil, tokens),
+			tokensHashes: appendTokensHashes(nil, tokens), //计算token hash values
 		})
 	}
 

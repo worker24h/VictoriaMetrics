@@ -125,7 +125,7 @@ func (ft *filterTime) applyToBlockSearch(bs *blockSearch, bm *bitmap) {
 		return
 	}
 
-	timestamps := bs.getTimestamps()
+	timestamps := bs.getTimestamps() // timestamps.bin
 	bm.forEachSetBit(func(idx int) bool {
 		ts := timestamps[idx]
 		return ts >= minTimestamp && ts <= maxTimestamp

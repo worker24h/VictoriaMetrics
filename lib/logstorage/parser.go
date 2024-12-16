@@ -224,9 +224,9 @@ again:
 
 // Query represents LogsQL query.
 type Query struct {
-	f filter
+	f filter // 包含搜索关键词，时间过滤器
 
-	pipes []pipe
+	pipes []pipe //管道计算，例如 | stream_context
 
 	// timestamp is the timestamp context used for parsing the query.
 	timestamp int64

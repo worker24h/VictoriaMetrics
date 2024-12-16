@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	retentionPeriod = flagutil.NewRetentionDuration("retentionPeriod", "7d", "Log entries with timestamps older than now-retentionPeriod are automatically deleted; "+
+	retentionPeriod = flagutil.NewRetentionDuration("retentionPeriod", "10y", "Log entries with timestamps older than now-retentionPeriod are automatically deleted; "+
 		"log entries with timestamps outside the retention are also rejected during data ingestion; the minimum supported retention is 1d (one day); "+
 		"see https://docs.victoriametrics.com/victorialogs/#retention ; see also -retention.maxDiskSpaceUsageBytes")
 	maxDiskSpaceUsageBytes = flagutil.NewBytes("retention.maxDiskSpaceUsageBytes", 0, "The maximum disk space usage at -storageDataPath before older per-day "+
@@ -53,10 +53,10 @@ func Init() {
 		logger.Fatalf("-retentionPeriod cannot be smaller than a day; got %s", retentionPeriod)
 	}
 	cfg := &logstorage.StorageConfig{
-		Retention:              retentionPeriod.Duration(),
-		MaxDiskSpaceUsageBytes: maxDiskSpaceUsageBytes.N,
-		FlushInterval:          *inmemoryDataFlushInterval,
-		FutureRetention:        futureRetention.Duration(),
+		Retention:              retentionPeriod.Duration(), //default 7d
+		MaxDiskSpaceUsageBytes: maxDiskSpaceUsageBytes.N,   // default 0, unlimit
+		FlushInterval:          *inmemoryDataFlushInterval, // default 5s
+		FutureRetention:        futureRetention.Duration(), // default 2d
 		LogNewStreams:          *logNewStreams,
 		LogIngestedRows:        *logIngestedRows,
 		MinFreeDiskSpaceBytes:  minFreeDiskSpaceBytes.N,

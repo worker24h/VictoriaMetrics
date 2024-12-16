@@ -11,6 +11,7 @@ import (
 	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logger"
 )
 
+/* indexdb->part中的metadata.json */
 type partHeader struct {
 	// The number of items the part contains.
 	itemsCount uint64
@@ -27,7 +28,7 @@ type partHeader struct {
 
 type partHeaderJSON struct {
 	ItemsCount  uint64
-	BlocksCount uint64
+	BlocksCount uint64 // BlocksCount不可能大于ItemsCount
 	FirstItem   hexString
 	LastItem    hexString
 }

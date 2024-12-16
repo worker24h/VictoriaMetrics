@@ -174,12 +174,12 @@ func (bf *bloomFilter) containsAll(hashes []uint64) bool {
 	}
 	maxBits := uint64(len(bits)) * 64
 	for _, h := range hashes {
-		idx := h % maxBits
-		i := idx / 64
-		j := idx % 64
-		mask := uint64(1) << j
-		w := bits[i]
-		if (w & mask) == 0 {
+		idx := h % maxBits     // 确定bit位置索引下表
+		i := idx / 64          //确定在第几个8字节
+		j := idx % 64          // 确定当前8字节下面的第几个bit位
+		mask := uint64(1) << j // 右移j位置，即标志这个是1
+		w := bits[i]           //取出数据中第i字节
+		if (w & mask) == 0 {   //两者进行&操作，如果是0表示一定不存在
 			// The token is missing
 			return false
 		}

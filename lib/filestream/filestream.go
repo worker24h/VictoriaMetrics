@@ -105,7 +105,7 @@ func MustOpen(path string, nocache bool) *Reader {
 	if nocache {
 		r.st.fd = f.Fd()
 	}
-	readersCount.Inc()
+	readersCount.Inc() //埋点引用技术
 	return r
 }
 

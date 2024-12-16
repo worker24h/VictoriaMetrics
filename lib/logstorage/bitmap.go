@@ -48,7 +48,7 @@ func (bm *bitmap) init(bitsLen int) {
 	bm.reset()
 
 	a := bm.a
-	wordsLen := (bitsLen + 63) / 64
+	wordsLen := (bitsLen + 63) / 64 //一个long是8字节，64bit, 通过长度bitlen计算出需要多少bit，向上取整
 	a = slicesutil.SetLength(a, wordsLen)
 	bm.a = a
 	bm.bitsLen = bitsLen
@@ -67,7 +67,7 @@ func (bm *bitmap) setBits() {
 		a[i] = ^uint64(0)
 	}
 	tailBits := bm.bitsLen % 64
-	if tailBits > 0 && len(a) > 0 {
+	if tailBits > 0 && len(a) > 0 { //将末尾用不到的bitmap，设置成0
 		// Zero bits outside bitsLen at the last word
 		a[len(a)-1] &= (uint64(1) << tailBits) - 1
 	}
@@ -135,7 +135,7 @@ func (bm *bitmap) isSetBit(i int) bool {
 }
 
 // forEachSetBit calls f for each set bit and clears that bit if f returns false
-func (bm *bitmap) forEachSetBit(f func(idx int) bool) {
+func (bm *bitmap) forEachSetBit(f func(idx int) bool) { //重点函数
 	a := bm.a
 	bitsLen := bm.bitsLen
 	for i, word := range a {

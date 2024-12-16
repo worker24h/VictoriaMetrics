@@ -33,7 +33,7 @@ func ResizeWithCopyNoOverallocate(b []byte, n int) []byte {
 // ResizeNoCopyMayOverallocate resizes b to minimum n bytes and returns the resized buffer (which may be newly allocated).
 //
 // If newly allocated buffer is returned then b contents isn't copied to it.
-func ResizeNoCopyMayOverallocate(b []byte, n int) []byte {
+func ResizeNoCopyMayOverallocate(b []byte, n int) []byte { // 只申请内存，没有拷贝数据
 	if n <= cap(b) {
 		return b[:n]
 	}

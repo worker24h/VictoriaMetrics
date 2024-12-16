@@ -156,9 +156,10 @@ func mustOpenDatadb(pt *partition, path string, flushInterval time.Duration) *da
 	// Remove temporary directories, which may be left after unclean shutdown.
 	fs.MustRemoveTemporaryDirs(path)
 
-	partNames := mustReadPartNames(path)
-	mustRemoveUnusedDirs(path, partNames)
+	partNames := mustReadPartNames(path)  //读取parts.json, 确定目录有哪些part
+	mustRemoveUnusedDirs(path, partNames) //删除不用的part
 
+	//part按照大小分为smallPart和bigPart
 	var smallParts []*partWrapper
 	var bigParts []*partWrapper
 	for _, partName := range partNames {
@@ -174,8 +175,8 @@ func mustOpenDatadb(pt *partition, path string, flushInterval time.Duration) *da
 				partPath, partsFile, partsFile, partsFile)
 		}
 
-		p := mustOpenFilePart(pt, partPath)
-		pw := newPartWrapper(p, nil, time.Time{})
+		p := mustOpenFilePart(pt, partPath)       //open part
+		pw := newPartWrapper(p, nil, time.Time{}) //wrapper part
 		if p.ph.CompressedSizeBytes > getMaxInmemoryPartSize() {
 			bigParts = append(bigParts, pw)
 		} else {
@@ -193,7 +194,7 @@ func mustOpenDatadb(pt *partition, path string, flushInterval time.Duration) *da
 	}
 	ddb.mergeIdx.Store(uint64(time.Now().UnixNano()))
 
-	ddb.startBackgroundWorkers()
+	ddb.startBackgroundWorkers() //合并，后续单独分析
 
 	return ddb
 }
@@ -919,7 +920,7 @@ func getMaxInmemoryPartSize() uint64 {
 	// Allocate 10% of allowed memory for in-memory parts.
 	n := uint64(0.1 * float64(memory.Allowed()) / maxInmemoryPartsPerPartition)
 	if n < 1e6 {
-		n = 1e6
+		n = 1e6 //1MB
 	}
 	return n
 }
@@ -1081,7 +1082,7 @@ func mustWritePartNames(path string, smallPartNames, bigPartNames []string) {
 }
 
 func mustReadPartNames(path string) []string {
-	partNamesPath := filepath.Join(path, partsFilename)
+	partNamesPath := filepath.Join(path, partsFilename) //读取parts.json
 	data, err := os.ReadFile(partNamesPath)
 	if err != nil {
 		logger.Panicf("FATAL: cannot read %s: %s", partNamesPath, err)
