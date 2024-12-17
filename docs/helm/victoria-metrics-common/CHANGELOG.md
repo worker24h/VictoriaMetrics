@@ -4,6 +4,31 @@
 
 - TODO
 
+## 0.0.34
+
+**Release date:** 2024-12-11
+
+![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
+
+- moved helm chart requirement to a common template
+
+## 0.0.33
+
+**Release date:** 2024-11-28
+
+![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
+
+- use container port instead of service one in `vm.host` template, while appIdx is defined
+- expect tls extraArg parameter as boolean value
+
+## 0.0.32
+
+**Release date:** 2024-11-25
+
+![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
+
+- removed suffix, that starts with `@sha` from app version label. see [this issue](https://github.com/VictoriaMetrics/helm-charts/issues/1801).
+
 ## 0.0.31
 
 **Release date:** 2024-11-21
@@ -279,5 +304,5 @@
 
 - Added `vm.enterprise.only` template to fail rendering if required license arguments weren't set.
 - Added `vm.image` template that introduces common chart logic of how to build image name from application variables.
-- Added `vm.ingress.port` template to render properly tngress port configuration depending on args type.
+- Added `vm.ingress.port` template to render properly ingress port configuration depending on args type.
 - Added `vm.probe.*` templates to render probes params consistently across all templates.

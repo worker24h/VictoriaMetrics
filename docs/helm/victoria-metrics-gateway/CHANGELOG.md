@@ -2,6 +2,26 @@
 
 - TODO
 
+## 0.6.1
+
+**Release date:** 2024-12-16
+
+![AppVersion: v1.108.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.108.0&color=success&logo=)
+![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
+
+- bump version of VM components to [v1.108.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.108.0)
+
+## 0.6.0
+
+**Release date:** 2024-12-02
+
+![AppVersion: v1.107.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.107.0&color=success&logo=)
+![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
+
+- updated common dependency 0.0.28 -> 0.0.33
+- fixed app.kubernetes.io/version tag override if custom tag is set. See [this issue](https://github.com/VictoriaMetrics/helm-charts/issues/1766).
+- bump version of VM components to [v1.107.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.107.0)
+
 ## 0.5.7
 
 **Release date:** 2024-11-18
@@ -110,7 +130,7 @@
 ![AppVersion: v1.102.1](https://img.shields.io/static/v1?label=AppVersion&message=v1.102.1&color=success&logo=)
 ![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
 
-**Update note**: main container name was changed to `vmgateway`, which will reacreate a pod.
+**Update note**: main container name was changed to `vmgateway`, which will recreate a pod.
 
 **Update note**: requires Helm 3.14+
 

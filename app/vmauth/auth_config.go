@@ -67,6 +67,7 @@ type UserInfo struct {
 	URLPrefix              *URLPrefix  `yaml:"url_prefix,omitempty"`
 	DiscoverBackendIPs     *bool       `yaml:"discover_backend_ips,omitempty"`
 	URLMaps                []URLMap    `yaml:"url_map,omitempty"`
+	DumpRequestOnErrors    bool        `yaml:"dump_request_on_errors,omitempty"`
 	HeadersConf            HeadersConf `yaml:",inline"`
 	MaxConcurrentRequests  int         `yaml:"max_concurrent_requests,omitempty"`
 	DefaultURL             *URLPrefix  `yaml:"default_url,omitempty"`
@@ -782,10 +783,11 @@ func parseAuthConfig(data []byte) (*AuthConfig, error) {
 
 func parseAuthConfigUsers(ac *AuthConfig) (map[string]*UserInfo, error) {
 	uis := ac.Users
-	if len(uis) == 0 && ac.UnauthorizedUser == nil {
-		return nil, fmt.Errorf("Missing `users` or `unauthorized_user` sections")
-	}
 	byAuthToken := make(map[string]*UserInfo, len(uis))
+	if len(uis) == 0 && ac.UnauthorizedUser == nil {
+		// fast path for empty configuration
+		return byAuthToken, nil
+	}
 	for i := range uis {
 		ui := &uis[i]
 		ats, err := getAuthTokens(ui.AuthToken, ui.BearerToken, ui.Username, ui.Password)

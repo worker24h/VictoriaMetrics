@@ -1,6 +1,36 @@
 ## Next release
 
-- Removed unsupported selectNodes SRV discovery
+- TODO
+
+## 0.16.0
+
+**Release date:** 2024-12-16
+
+![AppVersion: v1.108.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.108.0&color=success&logo=)
+![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
+
+- do not set clusterIP value, when service type is not ClusterIP. See [this issue](https://github.com/VictoriaMetrics/helm-charts/issues/1838)
+- bump version of VM components to [v1.108.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.108.0)
+
+## 0.15.0
+
+**Release date:** 2024-12-02
+
+![AppVersion: v1.107.0](https://img.shields.io/static/v1?label=AppVersion&message=v1.107.0&color=success&logo=)
+![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
+
+- bump version of VM components to [v1.107.0](https://github.com/VictoriaMetrics/VictoriaMetrics/releases/tag/v1.107.0)
+
+## 0.14.13
+
+**Release date:** 2024-11-28
+
+![AppVersion: v1.106.1](https://img.shields.io/static/v1?label=AppVersion&message=v1.106.1&color=success&logo=)
+![Helm: v3](https://img.shields.io/static/v1?label=Helm&message=v3&color=informational&logo=helm)
+
+- removed unsupported selectNodes SRV discovery
+- updated common dependency 0.0.28 -> 0.0.33
+- fixed app.kubernetes.io/version tag override if custom tag is set. See [this issue](https://github.com/VictoriaMetrics/helm-charts/issues/1766).
 
 ## 0.14.12
 
@@ -523,7 +553,7 @@
 
 - Update VictoriaMetrics components from v1.92.1 to v1.93.0
 - charts/victoria-metrics-cluster: remove incorrect comment (#607)
-- vmstorage, vminsert: Add topoloogySpreadConstraints (#596)
+- vmstorage, vminsert: Add topologySpreadConstraints (#596)
 
 ## 0.10.3
 
