@@ -65,7 +65,7 @@ func (pc *pipeStreamContext) initFilterInValues(_ map[string][]string, _ getFiel
 
 func (pc *pipeStreamContext) newPipeProcessor(workersCount int, stopCh <-chan struct{}, cancel func(), ppNext pipeProcessor) pipeProcessor {
 	maxStateSize := int64(float64(memory.Allowed()) * 0.2)
-
+	//创建和cpu 核心一样多的分片
 	shards := make([]pipeStreamContextProcessorShard, workersCount)
 	for i := range shards {
 		shards[i] = pipeStreamContextProcessorShard{
